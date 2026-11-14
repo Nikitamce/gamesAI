@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Krillion: Multilang — Игра на самые редкие ответы</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="ocean-backdrop" aria-hidden="true">
+    <div class="caustics"></div>
+    <div class="bubbles"></div>
+  </div>
+
+  <div class="app-shell">
+    <!-- Top Navigation & Controls -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">🦐</div>
+        <div>
+          <h1 class="brand-title">KRILLION <span class="brand-badge">MULTILANG</span></h1>
+          <p class="brand-sub">Найди самый редкий правильный ответ — на любом языке мира</p>
+        </div>
+      </div>
+
+      <div class="topbar-controls">
+        <div class="control-group">
+          <label for="diveSelect" class="control-label">Погружение</label>
+          <select id="diveSelect" name="dive" class="select-input">
+            <option value="daily-classic">🌊 Погружение 1: Классика</option>
+            <option value="deep-scholar">🦑 Погружение 2: Эрудит</option>
+            <option value="abyssal-challenge">🐋 Погружение 3: Бездна</option>
+            <option value="random-mix">🎲 Случайный микс (7 вопросов)</option>
+          </select>
+        </div>
+
+        <button id="timerToggleBtn" type="button" class="pill-btn" aria-pressed="true" title="Переключить режим таймера">
+          ⏱ 25 сек (Оригинал)
+        </button>
+
+        <button id="openLabBtn" type="button" class="pill-btn accent-btn" commandfor="labDialog" command="show-modal">
+          🔬 Лаборатория смысла
+        </button>
+
+        <button id="openRulesBtn" type="button" class="pill-btn" commandfor="rulesDialog" command="show-modal">
+          📖 Таблица редкости
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Two-Column Layout -->
+    <main class="workspace">
+      <!-- Left Column: Visual Depth Gauge & Tier Legend -->
+      <aside class="depth-sidebar" aria-label="Глубиномер океана">
+        <div class="depth-card">
+          <div class="depth-header">
+            <span class="depth-label">ТЕКУЩАЯ ГЛУБИНА</span>
+            <div class="depth-readout">
+              <span id="depthValue">0</span> <span class="depth-unit">м</span>
+            </div>
+            <div class="score-sub">
+              Очки: <strong id="totalScoreValue">0</strong> / 700 · <span id="oceanZoneBadge">🌊 Поверхность</span>
+            </div>
+          </div>
+
+          <div class="ocean-column">
+            <div class="depth-scale">
+              <span>0 м — Солнечная</span>
+              <span>1 500 м — Сумеречная</span>
+              <span>3 000 м — Полуночная</span>
+              <span>5 000 м — Абиссаль</span>
+              <span>7 000 м — Бездна</span>
+            </div>
+            <div class="depth-track">
+              <div id="depthFill" class="depth-fill" style="height: 0%"></div>
+              <div id="diverMarker" class="diver-marker" style="top: 0%">
+                <span class="sub-icon" aria-hidden="true">🤿</span>
+                <span class="marker-tag" id="markerTag">0 м</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tiers-card">
+          <h2 class="tiers-title">Уровни редкости Krillion</h2>
+          <ul id="tiersLegendList" class="tiers-list"></ul>
+        </div>
+      </aside>
+
+      <!-- Right Column: Game Arena -->
+      <section class="arena" aria-live="polite">
+        <!-- Active Round View -->
+        <div id="gameView" class="arena-card">
+          <div class="round-meta">
+            <div class="round-pills">
+              <span class="round-badge" id="roundCounter">Раунд 1 из 7</span>
+              <span class="dive-name-pill" id="diveNamePill">🌊 Ежедневное Погружение</span>
+            </div>
+            <div class="timer-display" id="timerDisplayWrap">
+              <span class="timer-clock" id="timerSeconds">25s</span>
+            </div>
+          </div>
+
+          <div class="timer-bar-track" id="timerBarTrack">
+            <div id="timerBarFill" class="timer-bar-fill"></div>
+          </div>
+
+          <!-- Prompt Card -->
+          <div class="prompt-box">
+            <div class="prompt-lang-tag">Категория раунда</div>
+            <h2 id="promptRu" class="prompt-ru">Загрузка категории...</h2>
+            <p id="promptEn" class="prompt-en">Loading prompt...</p>
+            <div class="prompt-hint-row">
+              <button id="toggleHintBtn" type="button" class="text-btn">💡 Подсказка</button>
+              <span id="promptHintText" class="hint-text hidden"></span>
+            </div>
+          </div>
+
+          <!-- Answer Input Form -->
+          <form id="answerForm" class="answer-form" action="/api/evaluate" method="POST" aria-labelledby="promptRu">
+            <div class="field-group">
+              <label for="answerInput" class="answer-label">
+                Ваш ответ (на любом языке) <span aria-hidden="true">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input
+                  id="answerInput"
+                  name="answer"
+                  type="text"
+                  class="answer-input"
+                  placeholder="Например: Суринам, カモノハシ, Platypus..."
+                  aria-describedby="answerHelp answerError"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="none"
+                  spellcheck="false"
+                  enterkeyhint="send"
+                  maxlength="120"
+                  required
+                >
+                <button id="submitBtn" type="submit" class="submit-btn">
+                  Проверить и нырнуть ↓
+                </button>
+              </div>
+              <p id="answerError" class="field-error hidden" role="status" aria-live="polite"></p>
+              <div class="input-footnote">
+                <span id="answerHelp">🌐 Автоперевод на английский + проверка близости по смыслу и синонимов</span>
+                <div id="exampleChips" class="example-chips"></div>
+              </div>
+            </div>
+          </form>
+
+          <!-- Evaluation Reveal Panel -->
+          <div id="revealPanel" class="reveal-panel hidden" role="status" aria-live="polite">
+            <div class="reveal-top">
+              <div id="tierBanner" class="tier-banner">
+                <span id="tierEmoji" class="tier-emoji">🐋</span>
+                <div>
+                  <div id="tierTitle" class="tier-title">One in a Krillion</div>
+                  <div id="tierSubtitle" class="tier-subtitle">+100 очков · +1000 м глубины</div>
+                </div>
+              </div>
+              <div id="freqPill" class="freq-pill">Встречаемость: &lt; 0.2%</div>
+            </div>
+
+            <!-- Translation & Semantic Pipeline Cards -->
+            <div class="pipeline-grid">
+              <div class="pipe-step">
+                <span class="pipe-label">1. Ваш ответ и язык</span>
+                <div class="pipe-val">
+                  <span id="revOriginal" class="mono-highlight">—</span>
+                  <span id="revLang" class="lang-chip">🌐 —</span>
+                </div>
+              </div>
+              <div class="pipe-step">
+                <span class="pipe-label">2. Перевод на английский</span>
+                <div class="pipe-val">
+                  <strong id="revTranslated">—</strong>
+                  <span id="revAltTranslations" class="alt-trans"></span>
+                </div>
+              </div>
+              <div class="pipe-step pipe-step-wide">
+                <span class="pipe-label">3. Семантическая проверка (По смыслу)</span>
+                <div class="pipe-val semantic-row">
+                  <span id="revSemanticBadge" class="semantic-badge">✓ 100%</span>
+                  <span id="revExplanation" class="semantic-text">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spectrum of Answers for this prompt -->
+            <div class="spectrum-box">
+              <div class="spectrum-header">
+                <h3>Спектр ответов этого раунда (от частых к редким)</h3>
+                <span class="spectrum-sub">Чем реже ответ, тем глубже погружение</span>
+              </div>
+              <div id="spectrumGrid" class="spectrum-grid"></div>
+            </div>
+
+            <div class="reveal-actions">
+              <button id="nextRoundBtn" type="button" class="primary-btn">
+                Следующий раунд →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- End-of-Dive Summary View -->
+        <div id="summaryView" class="arena-card hidden">
+          <div class="summary-hero">
+            <div class="summary-badge" id="summaryZoneBadge">👑 Повелитель Бездны</div>
+            <h2>Погружение завершено!</h2>
+            <p class="summary-stats">
+              Итоговая глубина: <strong id="summaryDepth">0 м</strong> из 7 000 м ·
+              Очки: <strong id="summaryScore">0</strong> / 700
+            </p>
+            <p id="summaryZoneName" class="summary-zone-name"></p>
+          </div>
+
+          <div class="summary-table-wrap">
+            <table class="summary-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Категория</th>
+                  <th>Ваш ответ</th>
+                  <th>Перевод (EN)</th>
+                  <th>Редкость</th>
+                  <th>Глубина</th>
+                </tr>
+              </thead>
+              <tbody id="summaryTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="summary-actions">
+            <button id="copyShareBtn" type="button" class="pill-btn accent-btn">
+              📋 Скопировать результат (Dive Log)
+            </button>
+            <button id="playAgainBtn" type="button" class="primary-btn">
+              🔄 Начать новое погружение
+            </button>
+          </div>
+          <p id="copyFeedback" class="copy-feedback hidden">Результат скопирован в буфер обмена!</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal 1: Translation & Semantic Meaning Laboratory -->
+  <dialog id="labDialog" class="ocean-dialog" closedby="any" aria-labelledby="labDialogTitle">
+    <div class="dialog-header">
+      <h2 id="labDialogTitle">🔬 Лаборатория Перевода и Смысла</h2>
+      <button type="button" class="close-dialog-btn" commandfor="labDialog" command="close" data-close="labDialog" aria-label="Закрыть">✕</button>
+    </div>
+    <p class="dialog-intro">
+      Проверьте, как движок переводит ответы с любого языка на английский, находит синонимы (Datamuse), понимает описания (Wikipedia) и вычисляет редкость в системе Krillion.
+    </p>
+    <form id="labForm" class="lab-form" action="/api/translate-check" method="POST" aria-labelledby="labDialogTitle">
+      <div class="lab-field">
+        <label for="labPromptSelect" class="field-label">Категория:</label>
+        <select id="labPromptSelect" name="promptId" class="select-input"></select>
+      </div>
+      <div class="lab-field">
+        <label for="labAnswerInput" class="field-label">
+          Ответ или описание на любом языке <span aria-hidden="true">*</span>
+        </label>
+        <div class="lab-input-row">
+          <input
+            id="labAnswerInput"
+            name="answer"
+            type="text"
+            class="answer-input"
+            placeholder="Например: млекопитающее с утиным клювом / Суринам / カモノハシ"
+            aria-describedby="labError"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
+            enterkeyhint="send"
+            maxlength="120"
+            autofocus
+            required
+          >
+          <button type="submit" class="primary-btn" id="labTestBtn">Проверить</button>
+        </div>
+        <p id="labError" class="field-error hidden" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+    <div id="labResult" class="lab-result hidden" role="status" aria-live="polite"></div>
+  </dialog>
+
+  <!-- Modal 2: Krillion Rarity Tiers & Rules -->
+  <dialog id="rulesDialog" class="ocean-dialog" closedby="any" aria-labelledby="rulesDialogTitle">
+    <div class="dialog-header">
+      <h2 id="rulesDialogTitle">📖 Как играть в Krillion: Multilang</h2>
+      <button type="button" class="close-dialog-btn" commandfor="rulesDialog" command="close" data-close="rulesDialog" aria-label="Закрыть" autofocus>✕</button>
+    </div>
+    <div class="rules-body">
+      <p>
+        В отличие от обычных викторин, здесь <strong>популярный ответ — плохой ответ</strong>. Ваша цель — дать <strong>правильный, но максимально редкий</strong> ответ, чтобы погрузиться как можно глубже (до 7 000 метров за 7 раундов).
+      </p>
+      <h3>🌐 Мультиязычный ИИ-движок проверки</h3>
+      <ul>
+        <li>Отвечайте на <strong>русском, английском, японском, испанском, немецком, французском</strong> и любом другом языке.</li>
+        <li>Движок автоматически определяет язык, переводит ответ на английский (включая альтернативные переводы) и проверяет <strong>близость по смыслу</strong>: точные совпадения, опечатки, синонимы, описательные фразы и редкие факты через энциклопедию.</li>
+        <li>Каждый балл равен <strong>10 метрам</strong> глубины океана.</li>
+      </ul>
+      <h3>📊 Таблица уровней редкости</h3>
+      <div id="rulesTierCards" class="rules-tier-cards"></div>
+    </div>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>

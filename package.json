@@ -1,0 +1,17 @@
+{
+  "name": "krillion-multilang",
+  "version": "1.0.0",
+  "description": "Multilingual Krillion rare-answer trivia game with automatic English translation, semantic similarity matching, and ocean depth rarity scoring.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "krillion",
+    "trivia",
+    "rare-answers",
+    "multilingual",
+    "semantic-matching"
+  ],
+  "license": "MIT"
+}
